@@ -1,0 +1,6 @@
+app\TraderMain.class
+app\AuditMain.class
+sink\LogsSink.class
+source\KafkaBidsSource.class
+source\KafkaOperationsSource.class
+sink\KafkaOperationsSink.class
