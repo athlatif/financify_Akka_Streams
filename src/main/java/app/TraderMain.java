@@ -36,12 +36,12 @@ public class TraderMain {
 
        ConsumerSettings<Integer, String> consumerSettings =
                 ConsumerSettings.create(toClassic(actorSystem), new IntegerDeserializer(), new StringDeserializer())
-                        .withBootstrapServers("kafkaBootstrapServers")
-                        .withGroupId("groupId")
+                        .withBootstrapServers("localhost:9092")
+                        .withGroupId("trader1")
                         .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
                         .withStopTimeout(Duration.ofSeconds(5));
 
-        String topic = "topic";
+        String topic = "foobar";
 
 
         Consumer.DrainingControl<Done> control = Consumer.sourceWithOffsetContext(consumerSettings, Subscriptions.topics(topic))
