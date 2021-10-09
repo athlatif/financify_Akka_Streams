@@ -20,27 +20,14 @@ import java.util.concurrent.CompletionStage;
 
 public class TraderMain {
 
-    public static Integer Current_Balance = 3000;
-    public static String TraderID = "3000";
+
+    public static Trader trader1;
+    public static Trader trader2;
 
 
-    public static CompletionStage<String>  TraderStratgy(Integer key, String value) { // .... }
-        // #atMostOnce #atLeastOnce
-        Integer casted_value = Integer.parseInt(value);
-        if(!(casted_value > Current_Balance)){
-
-            if(casted_value > (Current_Balance/2)){
-                value = "Sell";
-                Current_Balance = Current_Balance + casted_value;
-            }else{
-                value = "buy";
-                Current_Balance = Current_Balance - casted_value;
-            }
-
-        } else {
-            value = "ignore";
-        }
-        return CompletableFuture.completedFuture("Trader: " + TraderID + " Operation: " + value + " Current Balance: " + Integer.toString(Current_Balance));
+    public static CompletionStage<String>  TraderStratgy(String value, Trader t) { // .... }
+        String operation = t.applystratgy(value);
+        return CompletableFuture.completedFuture("Trader: " + t.getTraderId() + " Operation: " + operation + " Current Balance: " + Integer.toString(t.getCurrentBalance()));
     }
 
     public static void main(String[] args){
@@ -62,11 +49,16 @@ public class TraderMain {
                         .withProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "5000");
 
 
+       trader1 = new Trader(300000, "trader1", 1);
+       trader2 = new Trader(300000, "trader2", 2);
+
+
         String topic = "bids_topic";
 
-         Consumer.plainSource(consumerSettings,Subscriptions.topics(topic)).mapAsync(10, record -> TraderStratgy(record.key(), record.value()))
-                 .map(value -> new ProducerRecord<String, String>("operations_topic", value))
-                 .runWith(Producer.plainSink(producerSettings), actorSystem);
+
+        Consumer.plainSource(consumerSettings,Subscriptions.topics(topic)).mapAsync(10, record -> TraderStratgy(record.value(),trader1))
+                .map(value -> new ProducerRecord<String, String>("operations", value))
+                .runWith(Producer.plainSink(producerSettings), actorSystem);
 
 
 

@@ -5,19 +5,11 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.kafka.ConsumerSettings;
 import akka.kafka.Subscriptions;
 import akka.kafka.javadsl.Consumer;
-import akka.kafka.javadsl.Producer;
 import akka.stream.javadsl.Sink;
 import com.mongodb.*;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-
-
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-
-
-
-import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -32,80 +24,39 @@ public class AuditMain {
     static DB database = mongoClient.getDB("logs");
     static DBCollection collection = database.getCollection("audit_logs");
 
-    /*
 
-    private static Number number;
+    public static CompletionStage<String>  InsertToMongoDB(String value) {
 
-    public static CompletionStage<String> messageStructure(Integer key, String value) { // .... }
-
-        return CompletableFuture.completedFuture(value);
-    }
-
-
-     */
-
-    //public static MongoClient client;
-    //public static MongoDatabase db;
-    //public static MongoCollection<Number> numbersColl;
-
-    public static CompletionStage<String>  InsertToMongoDB(Integer key, String value) throws UnknownHostException {
-
-        DBObject person = new BasicDBObject("record", value);
-        collection.insert(person);
+        DBObject valueRecord = new BasicDBObject("record", value);
+        collection.insert(valueRecord);
 
         return CompletableFuture.completedFuture("");
 
     }
 
 
-    public static void main(String[] args) throws UnknownHostException {
+    public static void main(String[] args)  {
 
         ActorSystem actorSystem = ActorSystem.create(Behaviors.empty(),"actorSystem");
 
 
 
-
-        /*
-
-        PojoCodecProvider codecProvider = PojoCodecProvider.builder().register(Number.class).build();
-        CodecRegistry codecRegistry =
-                CodecRegistries.fromProviders(codecProvider, new ValueCodecProvider());
-
-
-         */
-
-        //client = MongoClients.create("mongodb+srv://atheer:atheer>@cluster0.f5yts.mongodb.net/myFirstDatabase?retryWrites=true&w=majority");
-        //db = client.getDatabase("logs");
-        //numbersColl = db.getCollection("audit_logs", Number.class).withCodecRegistry(codecRegistry);
-
-
-        // Source Kafka
+        // [Source] Kafka
 
         ConsumerSettings<Integer, String> consumerSettings =
                 ConsumerSettings.create(toClassic(actorSystem), new IntegerDeserializer(), new StringDeserializer())
                         .withBootstrapServers("localhost:9092")
-                        .withGroupId("audit_consumer8")
-                        .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
+                        .withGroupId("audit_consumer")
+                        .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest")
                         .withProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true")
                         .withProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "5000");
 
 
 
-        // Sink
-
-        /*
-        Consumer.plainSource(consumerSettings, Subscriptions.topics("operations_topic")).mapAsync(10, record -> messageStructure(record.key(), record.value()))
-                .map(value -> {number = new Number(value);
-                System.out.println(String.format("%s inserting %s", value, number.toString()));
-                return number;})
-                .runWith(MongoSink.insertOne(numbersColl), actorSystem);
-
-         */
+        // [Sink] MongoDB
 
 
-
-        Consumer.plainSource(consumerSettings,Subscriptions.topics("operations_topic")).mapAsync(10, record -> InsertToMongoDB(record.key(), record.value()))
-
+        Consumer.plainSource(consumerSettings,Subscriptions.topics("operations_topic")).mapAsync(10, record -> InsertToMongoDB(record.value()))
                 .to(Sink.foreach(
                         value -> {
                             System.out.println(value);
